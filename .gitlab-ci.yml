@@ -7,7 +7,7 @@ variables:
   # CI_REGISTRY_USER: toto
   # CI_REGISTRY_PASSWORD: tata
   #########################################
-  API_VERSION: "2.2.0"
+  API_VERSION: "2.2.1"
   REPOSITORY_NAME: $CI_REGISTRY/$CI_PROJECT
 
 stages:
@@ -41,6 +41,7 @@ deploy:dev:
   script:
     - export TAG_VERSION="${CI_COMMIT_SHORT_SHA}-${CI_PIPELINE_ID}"
     - export REPOSITORY_NAME=${CI_REGISTRY}/sandbox
+    - sed -i "s/__API_VERSION__/${API_VERSION}/g" spec/index.yml
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - /kaniko/executor --context . --destination ${REPOSITORY_NAME}/capsule-api:${API_VERSION}-${TAG_VERSION} --build-arg http_proxy=${HTTP_PROXY} --build-arg https_proxy=${HTTP_PROXY} --build-arg no_proxy=${NO_PROXY}
   only:
@@ -56,6 +57,7 @@ deploy:prod:
   script:
     - export TAG_VERSION="${CI_COMMIT_SHORT_SHA}-${CI_PIPELINE_ID}"
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - sed -i "s/__API_VERSION__/${API_VERSION}/g" spec/index.yml
     - /kaniko/executor --context . --destination ${REPOSITORY_NAME}/capsule-api:${API_VERSION}-${TAG_VERSION} --build-arg http_proxy=${HTTP_PROXY} --build-arg https_proxy=${HTTP_PROXY} --build-arg no_proxy=${NO_PROXY}
   only:
     - master

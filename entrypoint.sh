@@ -16,8 +16,7 @@ else
     export GUNICORN_CMD_ARGS="${GUNICORN_CMD_ARGS} --bind=0.0.0.0:5080"
 fi
 
-sed -i "s/__PLATFORM__/${PLATFORM}/g" spec/openapi.json
-sed -i "s/__PLATFORM_DESCRIPTION__/${PLATFORM_DESCRIPTION}/g" spec/openapi.json
+sed -i "s/__PLATFORM__/${PLATFORM}/g" spec/index.yml
+sed -i "s/__PLATFORM_DESCRIPTION__/${PLATFORM_DESCRIPTION}/g" spec/index.yml
 
 exec gunicorn server:app
-

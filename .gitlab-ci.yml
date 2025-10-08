@@ -7,58 +7,64 @@ variables:
   # CI_REGISTRY_USER: toto
   # CI_REGISTRY_PASSWORD: tata
   #########################################
-  API_VERSION: "2.2.1"
+  API_VERSION: "2.3.0"
   REPOSITORY_NAME: $CI_REGISTRY/$CI_PROJECT
+  TAG_VERSION: ${CI_COMMIT_SHORT_SHA}-${CI_PIPELINE_ID}
 
 stages:
   - tests
-  - deploy
+  - build
 
-tests:lint-secaudit:
-  stage: tests
-  image: harbor.in.ac-versailles.fr/library/ubuntu:22.04
+.test_base: &test_base
+  image: harbor.in.ac-versailles.fr/library/ubuntu:${UBUNTU_VERSION}
   script:
-    - chmod u+x prepare-ci-env.bash
-    - . ./prepare-ci-env.bash 3.10
-    - flake8 --extend-exclude=venv,migrations --ignore=E402
-    - bandit -n5 -x "./venv/*,./tests/*,./dev-tools/*" -r . -ll
-  allow_failure: true
+    - chmod u+x ./prepare-ci-env.bash
+    - . ./prepare-ci-env.bash ${PYTHON_VERSION}
+    - tox -e py${PYTHON_VERSION//./} -- 4
 
-tests:python3:
+tests:python3.10:
   stage: tests
-  image: harbor.in.ac-versailles.fr/library/ubuntu:22.04
-  script:
-    - cd ..; mv api capsule-api; cd capsule-api
-    - chmod u+x prepare-ci-env.bash
-    - . ./prepare-ci-env.bash 3.10
-    - python -m pytest -v -n4 --cov=. --cov-config=.coveragerc-ci --cov-report html --cov-report term  --disable-pytest-warnings tests/api/
+  <<: *test_base
+  variables:
+    UBUNTU_VERSION: "22.04"
+    PYTHON_VERSION: "3.10"
 
-deploy:dev:
-  stage: deploy
+tests:python3.12:
+  stage: tests
+  <<: *test_base
+  variables:
+    UBUNTU_VERSION: "24.04"
+    PYTHON_VERSION: "3.12"
+
+.build_base: &build_base
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
   script:
-    - export TAG_VERSION="${CI_COMMIT_SHORT_SHA}-${CI_PIPELINE_ID}"
-    - export REPOSITORY_NAME=${CI_REGISTRY}/sandbox
     - sed -i "s/__API_VERSION__/${API_VERSION}/g" spec/index.yml
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - /kaniko/executor --context . --destination ${REPOSITORY_NAME}/capsule-api:${API_VERSION}-${TAG_VERSION} --build-arg http_proxy=${HTTP_PROXY} --build-arg https_proxy=${HTTP_PROXY} --build-arg no_proxy=${NO_PROXY}
-  only:
-    - branches
-  except:
-    - master
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",
+      \"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor
+      --context .
+      --dockerfile ./docker/Dockerfile
+      --destination
+      ${REPOSITORY_NAME}/capsule-api:${API_VERSION}-${TAG_VERSION}
+      --build-arg http_proxy=${HTTP_PROXY}
+      --build-arg https_proxy=${HTTP_PROXY}
+      --build-arg no_proxy=${NO_PROXY}
 
-deploy:prod:
-  stage: deploy
-  image:
-    name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]
-  script:
-    - export TAG_VERSION="${CI_COMMIT_SHORT_SHA}-${CI_PIPELINE_ID}"
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - sed -i "s/__API_VERSION__/${API_VERSION}/g" spec/index.yml
-    - /kaniko/executor --context . --destination ${REPOSITORY_NAME}/capsule-api:${API_VERSION}-${TAG_VERSION} --build-arg http_proxy=${HTTP_PROXY} --build-arg https_proxy=${HTTP_PROXY} --build-arg no_proxy=${NO_PROXY}
-  only:
-    - master
-  when: manual
+build:dev:
+  stage: build
+  <<: *build_base
+  variables:
+    REPOSITORY_NAME: "${CI_REGISTRY}/sandbox"
+  before_script:
+    - export TAG_VERSION="${TAG_VERSION}-dev"
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "master"'
+
+build:prod:
+  stage: build
+  <<: *build_base
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'

@@ -1,6 +1,7 @@
 config.yml
 config-local.yml
 config-dev.yml
+config-intg.yml
 config-prod.yml
 config-demo.yml
 config-pp.yml

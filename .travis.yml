@@ -1,19 +1,9 @@
-dist: focal
+dist: noble
 
 jobs:
   include:
-    - stage: lint
+    - stage: tests
       script:
         - chmod u+x prepare-ci-env.bash
-        - . ./prepare-ci-env.bash 3.8
-        - flake8 --extend-exclude=venv,migrations --ignore=E402
-    - stage: audit
-      script:
-        - chmod u+x prepare-ci-env.bash
-        - . ./prepare-ci-env.bash 3.8
-        - bandit -n5 -x "./venv/*,./tests/*,./dev-tools/*" -r . -ll
-    - stage: cover
-      script:
-        - chmod u+x prepare-ci-env.bash
-        - . ./prepare-ci-env.bash 3.8
-        - python -m pytest -v -n4 --cov=. --cov-config=.coveragerc-ci --cov-report html --cov-report term tests/api/
+        - . ./prepare-ci-env.bash 3.12
+        - tox -e py312 -- 4

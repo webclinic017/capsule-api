@@ -1,16 +1,17 @@
-FROM harbor.in.ac-versailles.fr/library/python:3.8-slim AS build
+FROM harbor.in.ac-versailles.fr/library/python:3.12-slim AS build
 
-RUN apt-get update
-RUN apt-get install -y --no-install-recommends build-essential gcc
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends build-essential=12.12 gcc=4:14.2.0-1 && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /capsule-api
 
-RUN python -m venv /opt/venv
+RUN python -m venv /opt/venv --upgrade-deps
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY api api
 COPY cert cert
@@ -23,9 +24,10 @@ COPY exceptions.py .
 COPY models.py .
 COPY server.py .
 COPY utils.py .
-COPY entrypoint.sh .
 
-FROM harbor.in.ac-versailles.fr/library/python:3.8-slim AS run
+COPY ./docker/entrypoint.sh .
+
+FROM harbor.in.ac-versailles.fr/library/python:3.12-slim AS run
 
 RUN set -eux; \
     apt-get update; \
@@ -38,9 +40,9 @@ WORKDIR /capsule-api
 COPY --from=build /opt/venv /opt/venv
 COPY --from=build /capsule-api .
 
-RUN groupadd --gid 3210 -r capsule-api && useradd --uid 65432 -r -g capsule-api capsule-api
-RUN chown -R capsule-api:capsule-api /capsule-api
-RUN chmod u+x entrypoint.sh
+RUN groupadd --gid 3210 -r capsule-api && useradd --uid 65432 -r -g capsule-api capsule-api && \
+    chown -R capsule-api:capsule-api /capsule-api && \
+    chmod u+x entrypoint.sh
 
 USER capsule-api:capsule-api
 

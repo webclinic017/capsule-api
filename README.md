@@ -1,10 +1,10 @@
 # Capsule-API Documentation
 
-![python versions](https://img.shields.io/badge/Python-3.6%20%7C%203.7%20%7C%203.8-blue.svg)
+![python versions](https://img.shields.io/badge/Python-3.10%20%7C%203.12-blue.svg)
 
 | CI | Pipeline / build | Coverage |
 |----|------------------|----------|
-| Gitlab (internal) | [![pipeline status](https://git.in.ac-versailles.fr/capsule/capsapi/badges/master/pipeline.svg)](https://git.in.ac-versailles.fr/capsule/capsapi/commits/master) | [![coverage report](https://git.in.ac-versailles.fr/capsule/capsapi/badges/master/coverage.svg)](https://git.in.ac-versailles.fr/capsule/capsapi/commits/master) |
+| Gitlab (internal) | [![pipeline status](https://git.in.ac-versailles.fr/capsule/api/badges/master/pipeline.svg)](https://git.in.ac-versailles.fr/capsule/api/commits/master) | [![coverage report](https://git.in.ac-versailles.fr/capsule/api/badges/master/coverage.svg)](https://git.in.ac-versailles.fr/capsule/api/commits/master) |
 | Github (travis) | [![Build Status](https://travis-ci.com/gbarre/capsule-api.svg?branch=master)](https://travis-ci.com/gbarre/capsule-api) | N/A |
 
 ## Run the capsule API server in the development environment
@@ -13,24 +13,19 @@
 
 - docker
 - docker-compose
-- python3.6 (or higher)
-- python3.6-dev
+- python3.12 (or higher)
+- python3.12-dev
 - jq
+- An OpenId Connect provider (like Keycloak or LemonLDAP-NG)
 
 Then:
 
 ```sh
 # You have to activate a virtualenv and install the required packages.
-python3 -m venv ./venv
+python3 -m venv ./venv --upgrade-deps
 . venv/bin/activate
-pip install --upgrade pip
-pip install --upgrade setuptools
 pip install -r requirements.txt
 pip install -r test-requirements.txt # If you want to be able to run tests too.
-
-# Run a docker instance of keycloak a valid config file ./config-dev.yml
-# for the capsule-api server will be created.
-./keycloak/start.sh
 
 # To up the local MySQL server and the NATS server.
 docker-compose up -d
@@ -47,7 +42,7 @@ python -Wd server.py -c config-dev.yml
 ```
 
 **Remark:** if the server is running, you can view the API specification
-at the address [http://localhost:5000/v1/ui/](http://localhost:5000/v1/ui/).
+at the address [http://localhost:5000/v2/ui/](http://localhost:5000/v2/ui/).
 
 ## To stop capsule API server and remove all docker instances
 
@@ -55,9 +50,6 @@ Type `CTRL+c` to stop the current execution of capsule-api server.
 Then, to remove all docker instances (keyloack, MySQL and NATS):
 
 ```sh
-# Remove the keycloak instance.
-docker stop keycloak_dev && docker rm keycloak_dev
-
 # Remove the NATS and MySQL instances.
 # Warning, -v option remove the MySQL volume and you will lose all data.
 # Don't mention the -v option if you want to keep the MySQL volume.
@@ -85,20 +77,15 @@ flake8 --extend-exclude=venv,migrations --ignore=E402
 
 # To run secaudit
 bandit -n5 -x "./venv/*,./tests/*,./dev-tools/*" -r . -ll
-```
 
-## Update API specifications
-
-After updating the API spec, you must rebuild the `openapi.json` file with this command:
-
-```sh
-docker run --rm -v "$PWD/spec:/spec" -it jeanberu/swagger-cli swagger-cli bundle -o /spec/openapi.json /spec/index.yaml
+# Run all
+tox -e py312 -- 8
 ```
 
 ## Run production server
 
 ```sh
-gunicorn --access-logfile - --bind 0.0.0.0:5000 -w 4 --preload server:app
+gunicorn --access-logfile - --bind 0.0.0.0:5000 -w 4
 ```
 
 ## Run the docker production server
@@ -110,7 +97,7 @@ docker run --rm \
   -e WORKERS=8 \
   -e DB_MIGRATE=upgrade \
   --name capsule-api \
-  harbor.in.ac-versailles.fr/infra/capsule-api:2.0.1-57fb135c-00639
+  harbor.in.ac-versailles.fr/infra/capsule-api:2.0.1-57fb135c-00639 # Change tag
 ```
 
 To use with HTTPS **in development** run:
@@ -146,45 +133,10 @@ docker run --rm \
 ### Hack the code and create capsules and users
 
 ```sh
-curl --location --request POST 'http://localhost:5000/v1/capsules' \
+curl --location --request POST 'http://localhost:5000/v2/capsules' \
     --header 'Content-Type: application/json' \
     --header "Authorization: Bearer $TOKEN" \
     --data-raw '{ "name": "Test-Capsule-1", "owners": [ "userfoo", "userbar" ] }'
-```
-
-### Get keycloak users
-
-```sh
-#!/bin/sh
-
-# requires jq
-
-# config
-KEYCLOAK_URL=https://keycloak.example.com/auth
-KEYCLOAK_REALM=my_realm
-KEYCLOAK_CLIENT_ID=my_client_id
-KEYCLOAK_CLIENT_SECRET=ffffffff-ffff-ffff-ffff-ffffffffffff
-
-# DO NOT EDIT NEXT THIS LINE
-FILTER=""
-USER="$1"
-
-# Get valid token
-RESULT=`curl -s --data "grant_type=client_credentials&client_id=${KEYCLOAK_CLIENT_ID}&client_secret=${KEYCLOAK_CLIENT_SECRET}" \
-  ${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`
-export TKN=$(echo $RESULT | jq -r '.access_token')
-
-# Look for specific user ?
-if [ ! -z $USER ]
-then
-  FILTER="?username=${USER}"
-fi
-
-# Get user(s)
-curl -s -X GET "${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/users/${FILTER}" \
--H "Accept: application/json" \
--H "Authorization: Bearer $TKN"
-
 ```
 
 ### Send Nats request to simulate a driver
@@ -205,7 +157,6 @@ python publish_msg.py --nats=localhost:4222 --subject="capsule.webapp" --state="
   - capsule:
     - Send error message before the end of creation
     - Catch owner repetition on creation
-    - Check if user exists in keycloak after the local search fails
   - addons:
     - Change "file" option (like webapp)
     - Script to check consistency between sqlite & existing databases

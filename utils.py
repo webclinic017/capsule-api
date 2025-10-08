@@ -1,12 +1,10 @@
-import requests
 import re
 
 from sshpubkeys.exceptions import InvalidKeyError
 from models import Capsule, RoleEnum, SizeEnum, WebApp
 from models import User, AppToken
 from flask import current_app, g, request
-from exceptions import KeycloakIdNotFound, KeycloakUserNotFound
-from werkzeug.exceptions import BadRequest, Forbidden
+from werkzeug.exceptions import BadRequest, Forbidden, Unauthorized
 from werkzeug.exceptions import ServiceUnavailable
 import OpenSSL
 from functools import wraps
@@ -36,39 +34,6 @@ def is_valid_name(name):
         return True
     else:
         return False
-
-
-def check_owners_on_keycloak(usernames):  # pragma: no cover
-    oidc_client_secrets = current_app.config['OIDC_CLIENT_SECRETS']['web']
-    token_uri = oidc_client_secrets['token_uri']
-    admin_uri = oidc_client_secrets['admin_uri']
-    client_id = oidc_client_secrets['client_id']
-    client_secret = oidc_client_secrets['client_secret']
-
-    token_res = requests.post(
-        token_uri,
-        data={
-            'grant_type': 'client_credentials',
-            'client_id': client_id,
-            'client_secret': client_secret,
-        },
-        timeout=1,
-    ).json()
-    access_token = token_res['access_token']
-
-    for username in usernames:
-        if username == "":
-            raise KeycloakUserNotFound("empty username")
-        res = requests.get(
-            f'{admin_uri}/users?username={username}',
-            headers={
-                'Accept': 'application/json',
-                'Authorization': f'Bearer {access_token}',
-            },
-            timeout=1,
-        ).json()
-        if not res:
-            raise KeycloakUserNotFound(username)
 
 
 def oidc_require_role(min_role):
@@ -102,7 +67,7 @@ def require_auth(view_func):
         if validity:
             g.capsule_app_token = username
             return view_func(*args, **kwargs)
-        else:  # Fallback on Keycloak auth
+        else:  # Fallback on oidc auth
             return oidc.accept_token(
                 require_token=True,
                 render_errors=False
@@ -125,15 +90,9 @@ def check_apptoken(token):
 
 
 def check_user_role(min_role=RoleEnum.admin):
-    if hasattr(g, 'capsule_app_token'):  # Get user name from application token
-        name = g.capsule_app_token
-    else:  # Keycloak auth  # pragma: no cover
-        kc_user_id = g.oidc_token_info['sub']
-        try:
-            name = get_user_from_keycloak(kc_user_id)
-        except KeycloakIdNotFound as e:
-            raise BadRequest(description=f'{e.missing_id} is an invalid id.')
-
+    name = getUsernameFromToken()
+    if name == '-':
+        raise Unauthorized(description="The user is not authenticated.")
     # Look for user role
     user = User.query.filter_by(name=name).one_or_none()
 
@@ -159,39 +118,6 @@ def check_user_role(min_role=RoleEnum.admin):
         raise Forbidden
 
     return user
-
-
-def get_user_from_keycloak(id, by_name=False):  # pragma: no cover
-    oidc_client_secrets = current_app.config['OIDC_CLIENT_SECRETS']['web']
-    token_uri = oidc_client_secrets['token_uri']
-    admin_uri = oidc_client_secrets['admin_uri']
-    client_id = oidc_client_secrets['client_id']
-    client_secret = oidc_client_secrets['client_secret']
-
-    token_res = requests.post(
-        token_uri,
-        data={
-            'grant_type': 'client_credentials',
-            'client_id': client_id,
-            'client_secret': client_secret,
-        },
-        timeout=1,
-    ).json()
-    access_token = token_res['access_token']
-
-    res = requests.get(
-        f'{admin_uri}/users/{id}',
-        headers={
-            'Accept': 'application/json',
-            'Authorization': f'Bearer {access_token}',
-        },
-        timeout=1,
-    ).json()
-
-    if "username" not in res:
-        raise KeycloakIdNotFound(id)
-
-    return res["username"]
 
 
 def build_query_filters(model_class, filters):  # pragma: no cover
@@ -375,3 +301,32 @@ def get_certificate_issuer(x509cert):
         .replace("<X509Name object '/", '')\
         .replace("'>", '').replace('/', ', ')
     return issuer
+
+
+def getUsernameFromToken():  # pragma: no cover
+    try:
+        token = request.headers.\
+            get('Authorization').\
+            split(None, 1)[1].\
+            strip()
+        (validity, name) = check_apptoken(token)
+    except AttributeError:
+        return '-'
+    except KeyError:
+        validity = False
+    if validity:
+        return name
+    else:
+        if oidc._validate_token(token):
+            try:
+                username = oidc.user_getfield(
+                    'preferred_username',
+                    access_token=token,
+                )
+                if username is None:
+                    username = oidc.user_getfield('sub', access_token=token)
+            except Exception:
+                username = '-'
+        else:
+            username = '-'
+        return username

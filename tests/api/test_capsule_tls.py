@@ -196,7 +196,6 @@ class TestCapsuleTls:
         fqdn_id = str(db.fqdn1.id)
         with patch.object(oidc, "validate_token", return_value=True), \
              patch("utils.check_user_role", return_value=db.admin_user), \
-             patch("api.capsules.check_owners_on_keycloak"), \
              patch.object(NATS, "publish_webapp_present"):
 
             # Update capsule FQDN (set not acme valid)

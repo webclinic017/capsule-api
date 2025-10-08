@@ -697,7 +697,6 @@ class TestCapsuleWebapp:
         capsule_id = str(db.capsule1.id)
         with patch.object(oidc, "validate_token", return_value=True), \
              patch("utils.check_user_role", return_value=db.user1), \
-             patch("api.capsules.owners.check_owners_on_keycloak"), \
              patch.object(NATS, "publish_webapp_absent") as publish_method:
 
             # Delete webapp

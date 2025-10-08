@@ -1,0 +1,190 @@
+# This file is managed by Ansible, all changes will be lost.
+api:
+  acme_domains:
+  - in.ac-versailles.fr
+  admins: []
+  app_name: capsule-api
+  cluster_parts: 55
+  database_uri: mysql+pymysql://capsuleapi:H31a4bbk20zYeN0qDuxolSXuteUFre1n@intg-cloud-api-srv-1:3306/capsuleapi
+  debug: true
+  env: integration
+  host: intg-cloud-api-srv-1.in.ac-versailles.fr
+  nats:
+    ca_cert: |
+      -----BEGIN CERTIFICATE-----
+      MIIFOzCCAyOgAwIBAgIUKChoY4GYyrIpkM5Ggggys+/obvEwDQYJKoZIhvcNAQEL
+      BQAwNDEyMDAGA1UEAwwpaW50Zy1jbG91ZC1hcGktbmF0cy0xLmluLmFjLXZlcnNh
+      aWxsZXMuZnIwIBcNMjAwODI3MTIwODUyWhgPMjA1MDA4MjAxMjA4NTJaMDQxMjAw
+      BgNVBAMMKWludGctY2xvdWQtYXBpLW5hdHMtMS5pbi5hYy12ZXJzYWlsbGVzLmZy
+      MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAvuhbZMgSeei50V7W/mtI
+      61UegQcEh/oYpecBOYW0LEBlUhAUzob7+dqf8JaTW1SISo9orog0hr0kRXTmEUhp
+      HfGsUmdQ4B72OxV8okbL78k842v6Z0c6uep1zb2dRhqjkUtRVFzUR9+dxOko7/0B
+      hF6ihFaSjxeZnkPzT332NpY2ZpbuyfYp0rHxndAjzj/SU+PXfBgnISEtusLJ+gE4
+      meP2srNpFU7sdzZF41FEOa7uV1hixIibePHTQ8zkl92XZe4Uhzf2K06fDtx7j+a5
+      rvUZOwOGc668Ffby6SM8aYYQvlSNzmbpxfZC7nqbPYb/c++EXMDu5Ud2ahN10Tyr
+      /xg2CRiPmtd7uDxKr2f8zGh5JhNoiwRCcVITpkBKxYFdAp+AE+y6awR1/Ej06lKD
+      288XX2MYjOLdAdFWmWu7kq4SiSlY+7yH3KO9VTiLhQ+6Rcj7QGvOi5oD7qlfKLCX
+      scl00TW6fQrjHDTajDlWdXPO6m2bSV1f7qAuMbr76rO0DSp82gIP5gI6zIzFaG48
+      4tvhOI6Ymj/ycpcbTpWRYAdjzM98BsjlTQBi2EzMXdepN2fQlfyN78GFyYYRILQ/
+      1GGk3olLFY+mqf75qWQKaqR/LEGX6MbJEVz/32Y29HqvXmNKa6DPhAwdB6Pn9ZMa
+      BVJjTsa3t3hESaBj5JUhQpUCAwEAAaNDMEEwCQYDVR0TBAIwADA0BgNVHREELTAr
+      gilpbnRnLWNsb3VkLWFwaS1uYXRzLTEuaW4uYWMtdmVyc2FpbGxlcy5mcjANBgkq
+      hkiG9w0BAQsFAAOCAgEAS6XjpwfdD6HGsGL/tInA3cycTA1UQ4P0iTac8Zf9TApY
+      qib/pLlWeOyfFzOWCrnXVnjsUoGT4VlzD1nKnFuJEQa4CW8pv9+K1PnDzPA3bSVN
+      K3pBkGLu07ZbLS11MriWjKH/JVtlnJSjxyxCKMI+hYn41DUPU6k6U2dqiMocZrDg
+      xXzzoaxAyi6FjKQj429AZThzmKNfAGURu+Um7J5gEuh8bTBu17+PJOLqsBf4I/uW
+      e9rw7yBtsqqvtkjNLu8OuAoRQjShsh96L4nb6taRiwtHewTRZ2qWpcpds4LtDRde
+      NZfnd8XJ0FoeGcJBg3UNoGiPW4lswkb206RCO5Gg8MRBSKnYwoPKoSukb0fmICvM
+      6V6b657hm8CdGEjJZYO6oRkWpdAGxg0IrUAc6GizEEJG7Y86GmmYQrRWKKLDDmSY
+      NHa6Vv2B7WPnQxU/ZjytoEOyq/5T+bZ4E3LERErcwuLhoTN+NswAiR+KVIR1tQJJ
+      S31/0kqKg501yJ7AJcEPaIA2hygtQin9L6LAznGBMTn/HJFpR3swN4DynaWwAdA8
+      2TgOI3yOt8IBCrhWanaplSnqI+ZO6PFsaP8a4mmx9fb+k5aMPq12LFGr30vLOfWV
+      7sgD32BrCEfyAMExHmqjNKlIR5wxXd4F6s37Qzh+vkPrF+DVTQmoSNldm16rH3g=
+      -----END CERTIFICATE-----
+    log_level: WARN
+    uri: tls://intg-cloud-api-nats-1:4222
+  oidc:
+    client_secrets:
+      web:
+        auth_uri: "http://auth.int-sso-01.in.ac-versailles.fr/oauth2/authorize"
+        client_id: "intg-capsule-api"
+        client_secret: "6c63011a-441a-4fcd-bf26-a0da7c05db6c"
+        issuer: "http://auth.int-sso-01.in.ac-versailles.fr/oauth2"
+        redirect_uris:
+        - http://localhost:5000/*
+        token_introspection_uri: "http://auth.int-sso-01.in.ac-versailles.fr/oauth2/introspect"
+        token_uri: "http://auth.int-sso-01.in.ac-versailles.fr/oauth2/token"
+        userinfo_uri: "http://auth.int-sso-01.in.ac-versailles.fr/oauth2/userinfo"
+    id_token_cookie_secure: false
+    introspection_auth_method: client_secret_post
+    openid_realm: dev
+    require_verified_email: false
+    scopes:
+    - openid
+    - email
+    - profile
+    user_info_enabled: true
+  paas_cname: int-k8s-user-lb.in.ac-versailles.fr.
+  rsa_private_key: |-
+    -----BEGIN RSA PRIVATE KEY-----
+    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
+    -----END RSA PRIVATE KEY-----
+  secret_key: b75a2ddd-217c-46b0-9699-1e2147b1cc95
+  sqlalchemy:
+    echo: false
+    track_modifications: false
+  superadmins:
+  - flafont2
+  - ole-cam
+  - gbarre2
+  - afrancois
+  swagger_ui_config:
+    urls:
+    - name: Local
+      url: /
+    - name: Proxified
+      url: /capsule/
+  version: v2
+  volumes_size:
+    default: 5
+    global: 250
+drivers:
+  filer:
+    rsa_public_key: |
+      -----BEGIN PUBLIC KEY-----
+      MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAx9r3jU2ZG3pQKwhIU8v9
+      OUlJMSaJQlypwbKvq/jfhmvO/X7UgHFQk14pVzJNoUlIZg0HkbR25Itq52/zBFrU
+      TkKPp7JtTpY4wx7BVANPRICvikEc08zzCv21EJU/B57DgWojoKoZlmUMtBU8HtHV
+      YrV1NFqcQoaXO7LD9/JB7RgaEpnJTnu6lld1udKdGXgQXpC29zWH1AnPjIMRFL1W
+      0OxUZiH87e+4C7LgKeGbswqtPg9pc1Nr5YHHxLHFEETV8wIauFaRE7RFrgW6owvk
+      UXLH1eAG0VdvBjTA0RMF/mE3RNnYFTddD4e9gO3XNF7qQkK/23jd/V9PtZDg2f/l
+      WFZGTtSI8BiKd5jRsYBorNq1RFprTrqYwsss6t9JsZT7spXEPUKo13X0G0HGsrIT
+      +FpgAeTgKtrsFMzRw0kPLHUxalydL0CMoL1Hp1bokm4xZ9jqguvmggNB8/h9Xscz
+      jlf0+BeINWmoSOU/b3ah1tdmF71x+LqWBt3qHjN8VfjBAgMBAAE=
+      -----END PUBLIC KEY-----
+  k8s:
+    rsa_public_key: |
+      -----BEGIN PUBLIC KEY-----
+      MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEApPyaH6LW9tt4Hzx89Gz0
+      OV3Gsks9FyK3nzCfdVUl5z4xBIfSdr1SVGkfNlyXZ9eI6UzHHIkhMb/+rpde0Lmr
+      Cr69JVQU4iFw3QCpUQiOL8NTjCRor/u2o+Cy3QGNwe5Kf+jVOkW18AUD2+tzxv/3
+      kW/yXJmfX4Ixfyo3PflFNyj3Sf0rYtQaV3/cGmzmpa2/8/KiiWZEpii860tTd+L7
+      TJ+jn5pKdQ/aLRzWoSBTgjSBCl9yF2x/6awbzBmpgwdTUOXr36IZYxhpGwIGuypq
+      fdD4nzaTvi3Ho0I/7iX0n4gbV/hA4nmEkAoSDKCCXqFkpRml/6wO2qSB3fbE4Ujr
+      g8Z3YsJZUHqUajblam6xD6yqyG425DTrwwlflz3Rl/4QJZGdxkRf99hZOObwATgj
+      9s4p4zyz9IOQSbSNjOrkKq1r6H5FvKuerEdv1Aqb6fUaHPbx2+e81Ycn1ommjEaX
+      9nmwMdV6bqFL3b5+dWfeBin5U0u4jBU7vDWQIZoxivKO2EaUjF2XksdyRhGYllFO
+      O214DciG74yjF9+LfU3vdUZeo/G6I/mV7iT360Ms0T+uTTlDVa8I5cjdw/4zl2Y+
+      ik3L0TmI17eBWfqTGcQeBiprrWS3CQWdpV5opXqKUIIqta3YB2dSQmwgQX2fFIbD
+      mHo1s3d5AmzdyOShtXJRnikCAwEAAQ==
+      -----END PUBLIC KEY-----
+  mariadb1:
+    rsa_public_key: |
+      -----BEGIN PUBLIC KEY-----
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAx5Yp0545bkEaeEYmqMhp
+      STF7sCaTsb12pAF0wB3xnJd5kJMpVslm3xU9E1jLCGtCqq8HXOUbfyn3TCheJRPi
+      YuHFXneIP/5N/Onc7vqu2Pp61bZAnUqgT943FXMQmIMmof49Q5oZW8uTnmzRaBk5
+      GAY1me8JR7QAjkah58wyiSu6UmHYsrNinZX+6p102iR0pLuvCHKvslAZMSL4ngVm
+      4XNOoe6aO8sES2T+2sx8yl5++67XsL/DF5QAwqJZcaD5g5xbegj6aAaXh8trVKwI
+      Am34d19N+aAV2L3i+2sapzQpe6TOuLcFyHnoiviM10x6OHgvAbKNuQNDj9VzfxgZ
+      6QIDAQAB
+      -----END PUBLIC KEY-----
+  sshportal:
+    rsa_public_key: |
+      -----BEGIN PUBLIC KEY-----
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1gps2WfEQOP2kMpweFUO
+      QGPiPLmZYWVYusPvhQR2eAFk8hsXw9TTZ/Nedhmy4u1vV6d9NSaZrI6h0HIOKzOF
+      EWYqdx2DFGwTP5cYv1RtpPgaXGT0iLAO3v4YMFl9rZc8OCNCi+22pv3p9tx9f8+1
+      2/PN9LK6461xnXwWegZKvYw+wFus2EV1bB3XtPX/awGg7pT4uGWrKLZNQktpbpK8
+      1Mr4jaRH0NosoaMyzjSfSwxSYDtJ7WLHbEARg2UdOW6HuFemI+kYO2pURdt6ylJJ
+      +aNkfaQXSQuLNeQvbduQMryU3qrebZ3Jex/3H4CnFesTS3kadKV499CdrJ4blfrp
+      FQIDAQAB
+      -----END PUBLIC KEY-----

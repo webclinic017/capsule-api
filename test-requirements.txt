@@ -1,6 +1,7 @@
-bandit
-flake8
-pytest
-pytest-cov
-pytest-xdist
-WebTest
+flake8>=4.0.1
+pytest>=3.0.7
+tox>=2.7.0
+webtest>=3.0.0
+pytest-cov>=3.0.0
+pytest-xdist>=2.5.0
+bandit>=1.7.2

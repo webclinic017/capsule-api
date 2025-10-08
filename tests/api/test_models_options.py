@@ -19,8 +19,7 @@ class TestmodelsOptions:
     @staticmethod
     def build_capsule(db, testapp):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.admin_user), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.admin_user):
 
             capsule_input = {
                 "name": "test-capsule",

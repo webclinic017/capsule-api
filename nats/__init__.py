@@ -211,6 +211,7 @@ class NATS(object):
             "id": webapp_data['id'],
             "name": capsule_data['name'],
             "opts": webapp_data['opts'],
+            "owners": "",  # GB (for racdata driver)
             "runtime_id": webapp_data['runtime_id'],
             "size": capsule_data['size'],  # tiny, small... (for k8s driver)
             "uid": capsule_data['uid'],
@@ -231,9 +232,11 @@ class NATS(object):
             data['authorized_keys'].append(sshkey['public_key'])
 
         for owner in capsule_data['owners']:
+            data['owners'] = f"{data['owners']},{owner['name']}"
             for sshkey in owner['public_keys']:
                 data['authorized_keys'].append(sshkey['public_key'])
-
+        if data['owners'].startswith(','):
+            data['owners'] = data['owners'][1:]
         return data
 
     def publish_addon_present(self, addon, capsule_name):

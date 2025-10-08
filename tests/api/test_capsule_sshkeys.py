@@ -191,8 +191,7 @@ class TestCapsuleSshKeys:
 
     def test_delete_bad_sshkey_capsule(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.admin_user), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.admin_user):
 
             _capsule_input = {
                 "name": "test-capsule",

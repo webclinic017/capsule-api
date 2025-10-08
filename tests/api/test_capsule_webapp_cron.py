@@ -28,8 +28,7 @@ class TestCapsuleWepappCron:
     def build_temp_capsule(db, testapp):
         with patch.object(oidc, "validate_token", return_value=True), \
              patch("utils.check_user_role", return_value=db.admin_user), \
-             patch.object(NATS, "publish_webapp_present"), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch.object(NATS, "publish_webapp_present"):
 
             _capsule_input = {
                 "name": "temp-capsule",

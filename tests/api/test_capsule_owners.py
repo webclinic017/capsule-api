@@ -1,7 +1,6 @@
 from tests.utils import api_version, bad_id, unexisting_id, dict_contains
 from app import oidc
 from unittest.mock import patch
-from exceptions import KeycloakUserNotFound
 import pytest
 from nats import NATS
 
@@ -125,6 +124,20 @@ class TestCapsuleOwners:
             )
 
     # Response 404:
+    def test_patch_with_unexisting_user(self, testapp, db):
+        capsule_id = str(db.capsule1.id)
+        with patch.object(oidc, "validate_token", return_value=True), \
+             patch("utils.check_user_role", return_value=db.user1):
+
+            res = testapp.patch_json(
+                api_version + "/capsules/" + capsule_id + "/owners",
+                self._owners_input,
+                status=404
+            ).json
+            msg = f'{db.user2} does not exists yet in database. Please ' \
+                  'ask this user to connect first.'
+            assert msg in res["error_description"]
+
     def test_patch_not_found_capsule_id(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
              patch("utils.check_user_role", return_value=db.user1):
@@ -138,10 +151,7 @@ class TestCapsuleOwners:
     def test_patch_not_found_owner(self, testapp, db):
         capsule_id = str(db.capsule1.id)
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.user1), \
-             patch(
-                 "api.capsules.owners.check_owners_on_keycloak",
-                 side_effect=KeycloakUserNotFound("tutu3")):
+             patch("utils.check_user_role", return_value=db.user1):
 
             testapp.patch_json(
                 api_version + "/capsules/" + capsule_id + "/owners",
@@ -166,26 +176,10 @@ class TestCapsuleOwners:
             )
 
     # Response 200:
-    def test_patch_with_unexisting_user(self, testapp, db):
-        capsule_id = str(db.capsule1.id)
-        with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.user1), \
-             patch("api.capsules.owners.check_owners_on_keycloak"), \
-             patch.object(NATS, "publish_webapp_present") as publish_method:
-
-            res = testapp.patch_json(
-                api_version + "/capsules/" + capsule_id + "/owners",
-                self._owners_input,
-                status=200
-            ).json
-            publish_method.assert_called_once()
-            assert self._owners_input["newOwner"] in res["owners"]
-
     def test_patch_with_existing_user(self, testapp, db):
         capsule_id = str(db.capsule1.id)
         with patch.object(oidc, "validate_token", return_value=True), \
              patch("utils.check_user_role", return_value=db.user1), \
-             patch("api.capsules.owners.check_owners_on_keycloak"), \
              patch.object(NATS, "publish_webapp_present") as publish_method:
 
             owner_input = {

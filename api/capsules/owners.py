@@ -3,9 +3,8 @@ from flask import request
 from models import RoleEnum
 from models import Capsule, User, user_schema, capsule_output_schema
 from app import db, nats
-from utils import oidc_require_role, check_owners_on_keycloak
+from utils import oidc_require_role
 from werkzeug.exceptions import NotFound, BadRequest, Forbidden, Conflict
-from exceptions import KeycloakUserNotFound
 from sqlalchemy.exc import StatementError
 
 
@@ -47,9 +46,10 @@ def patch(capsule_id, user):
     capsule = _get_capsule(capsule_id, user)
     owner_data = request.get_json()
 
-    if "newOwner" not in owner_data:
+    try:
+        new_owner = owner_data["newOwner"]
+    except KeyError:
         raise BadRequest("The key newOwner is required.")
-    new_owner = owner_data["newOwner"]
 
     user_is_owner = False
     for owner in capsule.owners:
@@ -62,16 +62,12 @@ def patch(capsule_id, user):
     if (not user_is_owner) and (user.role == RoleEnum.user):
         raise Forbidden
 
-    try:  # Check if owners exist on Keycloak
-        check_owners_on_keycloak([new_owner])
-    except KeycloakUserNotFound as e:
-        raise NotFound(description=f'{e.missing_username} was not '
-                                   'found in Keycloak.')
-
-    # Get existent users, create the others
+    # Get user
     user = User.query.filter_by(name=new_owner).one_or_none()
     if user is None:  # User does not exist in DB
-        new_user = User(name=new_owner, role=RoleEnum.user)
+        msg = f'{owner} does not exists yet in database. ' \
+              'Please ask this user to connect first.'
+        raise NotFound(description=msg)
     else:
         new_user = user
 

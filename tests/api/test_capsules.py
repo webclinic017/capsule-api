@@ -1,6 +1,5 @@
 from tests.utils import api_version, dict_contains, unexisting_id, bad_id
 from app import oidc
-from exceptions import KeycloakUserNotFound
 from unittest.mock import patch
 from werkzeug.exceptions import Forbidden
 from models import capsule_output_schema, capsule_verbose_schema
@@ -13,9 +12,7 @@ class TestCapsules:
     _capsule_input = {
         "name": "test-capsule",
         "owners": [
-            "foobar",
-            "barfoo",
-            "toto1",
+            "user1",
         ],
         "authorized_keys": [
             "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDVbtGe1p6vAjwizq"
@@ -115,8 +112,7 @@ class TestCapsules:
     # Response 201:
     def test_create(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.admin_user), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.admin_user):
 
             res = testapp.post_json(
                 api_version + "/capsules",
@@ -133,27 +129,26 @@ class TestCapsules:
     # Response 400:
     def test_create_raises_on_invalid_owner(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.admin_user), \
-             patch(
-                 "api.capsules.check_owners_on_keycloak",
-                 side_effect=KeycloakUserNotFound("barfoo")):
+             patch("utils.check_user_role", return_value=db.admin_user):
+
+            new_input = dict(self._capsule_input)
+            new_input['owners'] = ['barfoo']
 
             res = testapp.post_json(
                 api_version + "/capsules",
-                self._capsule_input,
+                new_input,
                 status=400
             ).json
             assert "barfoo" in res["error_description"]
 
     def test_create_too_long_name(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.admin_user), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.admin_user):
 
             capsule_input_illegal = {
                 "name": "1 Capsule with_illegal charactères",
                 "owners": [
-                    "foobar"
+                    "user1"
                 ]
             }
             res = testapp.post_json(
@@ -169,8 +164,7 @@ class TestCapsules:
 
     def test_create_illegal_name(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.admin_user), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.admin_user):
 
             capsule_input_illegal = {
                 "name": "1 Capsule with_illegal charactères",
@@ -183,12 +177,11 @@ class TestCapsules:
                 capsule_input_illegal,
                 status=400
             ).json
-            assert "illegal" in res["error_description"]
+            assert "foobar" in res["error_description"]
 
     def test_create_duplicated_name(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.admin_user), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.admin_user):
 
             # Create first caps
             testapp.post_json(
@@ -214,8 +207,7 @@ class TestCapsules:
 
     def test_create_bad_json_missing_name(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.admin_user), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.admin_user):
 
             temp_input = dict(self._capsule_input)
             temp_input.pop("name")
@@ -228,8 +220,7 @@ class TestCapsules:
 
     def test_create_bad_json_missing_owners(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.admin_user), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.admin_user):
 
             temp_input = dict(self._capsule_input)
             temp_input.pop("owners")
@@ -243,8 +234,7 @@ class TestCapsules:
 
     def test_create_repeat_fqdn(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.admin_user), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.admin_user):
 
             temp_input = dict(self._capsule_input)
             temp_input['fqdns'] = [
@@ -267,8 +257,7 @@ class TestCapsules:
 
     def test_create_already_exist_fqdn(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.admin_user), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.admin_user):
 
             temp_input = dict(self._capsule_input)
             temp_input['fqdns'] = [
@@ -296,8 +285,7 @@ class TestCapsules:
     # Response 402:
     def test_create_payment_required(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.admin_user), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.admin_user):
 
             temp_input = dict(self._capsule_input)
             temp_input['size'] = 'xlarge'
@@ -474,8 +462,7 @@ class TestCapsules:
     # Response 200:
     def test_patch(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.admin_user), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.admin_user):
 
             res = testapp.patch_json(
                 api_version + "/capsules/" + str(db.capsule1.id),
@@ -488,8 +475,7 @@ class TestCapsules:
 
     def test_patch_disable_no_update(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.user1), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.user1):
 
             no_update = {'no_update': False}
 
@@ -504,8 +490,7 @@ class TestCapsules:
     # Response 400:
     def test_patch_bad_capsule_id(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.user1), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.user1):
 
             res = testapp.patch_json(
                 api_version + "/capsules/" + bad_id,
@@ -526,8 +511,7 @@ class TestCapsules:
     # Response 402:
     def test_patch_payment_required(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.admin_user), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.admin_user):
 
             new_size = {'size': 'xlarge'}
             res = testapp.patch_json(
@@ -552,8 +536,7 @@ class TestCapsules:
 
     def test_patch_no_update_not_parts_manager(self, testapp, db):
         with patch.object(oidc, "validate_token", return_value=True), \
-             patch("utils.check_user_role", return_value=db.user1), \
-             patch("api.capsules.check_owners_on_keycloak"):
+             patch("utils.check_user_role", return_value=db.user1):
 
             res = testapp.patch_json(
                 api_version + "/capsules/" + str(db.capsule1.id),

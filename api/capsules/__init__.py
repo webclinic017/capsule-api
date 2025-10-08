@@ -8,9 +8,9 @@ from models import capsule_input_schema
 from models import capsules_verbose_schema, capsule_verbose_schema
 from app import db, nats
 from werkzeug.exceptions import NotFound, BadRequest, Forbidden
-from utils import check_owners_on_keycloak, getClusterPartsUsage
+from utils import getClusterPartsUsage
 from utils import is_valid_name, build_query_filters, oidc_require_role
-from exceptions import FQDNAlreadyExists, KeycloakUserNotFound, PaymentRequired
+from exceptions import FQDNAlreadyExists, PaymentRequired
 from sqlalchemy.exc import StatementError
 
 
@@ -54,18 +54,13 @@ def post():
               'some Bitcoins... :-)'
         raise PaymentRequired(description=msg)
 
-    try:  # Check if owners exist on Keycloak
-        check_owners_on_keycloak(data['owners'])
-    except KeycloakUserNotFound as e:
-        raise BadRequest(
-            description=f'{e.missing_username} is an invalid user.'
-        )
-
-    # Get existent users, create the others
+    # Get users
     for i, owner in enumerate(data['owners']):
         user = User.query.filter_by(name=owner).one_or_none()
         if user is None:  # User does not exist in DB
-            data['owners'][i] = User(name=owner, role=RoleEnum.user)
+            msg = f'{owner} does not exists yet in database. ' \
+                'Please ask this user to connect first.'
+            raise BadRequest(description=msg)
         else:
             data['owners'][i] = user
 
